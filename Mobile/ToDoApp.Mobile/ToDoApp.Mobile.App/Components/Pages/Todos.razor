@@ -1,0 +1,152 @@
+﻿@page "/todos"
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+@using ToDoApp.Mobile.App.Models
+@using ToDoApp.Mobile.App.Models.Enums
+@using ToDoApp.Mobile.App.Services.Interfaces
+@attribute [Authorize]
+@inject AuthenticationStateProvider AuthStateProvider
+@inject ITodoItemService TodoItemService
+@inject NavigationManager Navigation
+
+<link rel="stylesheet" href="css/todolist.css" />
+
+<AuthorizeView>
+    <Authorized>
+        <div class="todo-container">
+            <header class="app-header">
+                <h1 class="app-title">My Tasks</h1>
+                <div class="header-actions">
+                    <button class="add-btn" @onclick="@(() => Navigation.NavigateTo("/add"))">
+                        <i class="fas fa-plus"></i> Add New
+                    </button>
+                </div>
+            </header>
+
+            <div class="filter-controls">
+                <select @bind="currentFilter" class="filter-select">
+                    <option value="all">All Tasks</option>
+                    <option value="pending">Pending</option>
+                    <option value="inprogress">In Progress</option>
+                    <option value="completed">Completed</option>
+                    <option value="cancelled">Cancelled</option>
+                </select>
+            </div>
+
+            <div class="todo-list">
+                @if (filteredTodos?.Any() == true)
+                {
+                    foreach (var todo in filteredTodos)
+                    {
+                        <div class="todo-card @GetStatusClass(todo.Status)">
+                            <div class="todo-content">
+                                <div class="todo-header">
+                                    <h3 class="todo-title">@todo.Title</h3>
+                                    <span class="todo-date">@todo.DueDate.ToString("MMM dd")</span>
+                                </div>
+                                <p class="todo-description">@todo.Description</p>
+                                <div class="todo-status">
+                                    <span class="status-badge">@todo.Status</span>
+                                </div>
+                            </div>
+                            <div class="todo-actions">
+                                <button class="action-btn edit-btn" @onclick="() => EditTodo(todo.Id)">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="action-btn delete-btn" @onclick="() => DeleteTodo(todo.Id)">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                                <button class="action-btn status-btn" @onclick="() => ToggleStatus(todo)">
+                                    <i class="fas @GetStatusIcon(todo.Status)"></i>
+                                </button>
+                            </div>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div class="empty-state">
+                        <i class="fas fa-tasks"></i>
+                        <p>No tasks found</p>
+                       
+                    </div>
+                }
+            </div>
+        </div>
+    </Authorized>
+    <NotAuthorized>
+        <p>You are not authorized to access this page.</p>
+    </NotAuthorized>
+</AuthorizeView>
+@code {
+    private List<TodoItemListResponse> todos = new();
+    private string currentFilter = "all";
+    private string errorMessage = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadTodos();
+    }
+
+    private async Task LoadTodos()
+    {
+        try
+        {
+            todos = await TodoItemService.GetAll();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = "Failed to load todos: " + ex.Message;
+        }
+    }
+
+    private List<TodoItemListResponse> filteredTodos => currentFilter switch
+    {
+        "pending" => todos.Where(t => t.Status == TodoStatus.Pending).ToList(),
+        "inprogress" => todos.Where(t => t.Status == TodoStatus.InProgress).ToList(),
+        "completed" => todos.Where(t => t.Status == TodoStatus.Completed).ToList(),
+        "cancelled" => todos.Where(t => t.Status == TodoStatus.Cancelled).ToList(),
+        _ => todos
+    };
+
+    private string GetStatusClass(TodoStatus status)
+    {
+        return status switch
+        {
+            TodoStatus.Completed => "completed",
+            TodoStatus.InProgress => "in-progress",
+            TodoStatus.Pending => "pending",
+            TodoStatus.Cancelled => "cancelled",
+            _ => ""
+        };
+    }
+
+    private string GetStatusIcon(TodoStatus status)
+    {
+        return status switch
+        {
+            TodoStatus.Completed => "fa-undo",
+            _ => "fa-check"
+        };
+    }
+
+    private async Task ToggleStatus(TodoItemListResponse todo)
+    {
+        todo.Status = todo.Status == TodoStatus.Completed ? TodoStatus.Pending : TodoStatus.Completed;
+        // Call your API to update status
+        await TodoItemService.UpdateStatus(todo.Id, todo.Status);
+        await LoadTodos();
+    }
+
+    private void EditTodo(int id)
+    {
+        Navigation.NavigateTo($"/editTodo/{id}");
+    }
+
+    private async Task DeleteTodo(int id)
+    {
+        // Add confirmation dialog here
+        await TodoItemService.Delete(id);
+        await LoadTodos();
+    }
+}

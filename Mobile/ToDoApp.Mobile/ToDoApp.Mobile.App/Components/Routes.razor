@@ -1,0 +1,23 @@
+﻿@using ToDoApp.Mobile.App.Components.Pages
+@using Microsoft.AspNetCore.Components.Authorization
+@inject NavigationManager Navigation
+
+
+<Router AppAssembly="@typeof(MauiProgram).Assembly">
+    <Found Context="routeData">
+        <AuthorizeRouteView RouteData="@routeData" DefaultLayout="@typeof(Layout.MainLayout)" >
+            <NotAuthorized>
+                @if (!context.User.Identity!.IsAuthenticated)
+                {
+                    Navigation.NavigateTo("/Account/Login");
+                }
+                else
+                {
+                    <p>You are not authorized to access this resource</p>
+                }
+            </NotAuthorized>
+        </AuthorizeRouteView>
+        <FocusOnNavigate RouteData="@routeData" Selector="h1" />
+    </Found>
+    
+</Router>

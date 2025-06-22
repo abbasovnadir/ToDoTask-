@@ -1,0 +1,118 @@
+﻿@page "/"
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+@using ToDoApp.Mobile.App.Models
+@using ToDoApp.Mobile.App.Models.Enums
+@using ToDoApp.Mobile.App.Services.Interfaces
+@attribute [Authorize]
+@inject NavigationManager Navigation
+@inject AuthenticationStateProvider AuthStateProvider
+@inject ITodoItemService TodoItemService
+
+<link rel="stylesheet" href="css/HomePageStyleSheet.css" />
+
+<AuthorizeView>
+    <Authorized>
+        <div class="home-container">
+            <header class="app-header">
+                <h1 class="app-title">My Todo App</h1>
+                <span class="app-subtitle">Organize your day efficiently</span>
+            </header>
+
+            <section class="stats-container">
+                <div class="stat-card" @onclick="@(() => Navigation.NavigateTo("/todos"))">
+                    <span class="stat-number">@totalTasks</span>
+                    <span class="stat-label">All Tasks</span>
+                </div>
+                <div class="stat-card" @onclick="@NavigateToCompleted">
+                    <span class="stat-number">@completedTasks</span>
+                    <span class="stat-label">Completed</span>
+                </div>
+
+                <div class="stat-card" @onclick="@NavigateToPending">
+                    <span class="stat-number">@pendingTasks</span>
+                    <span class="stat-label">Pending</span>
+                </div>
+            </section>
+
+            <section class="quick-actions">
+                <button class="stat-card" @onclick="@(() => Navigation.NavigateTo("/add"))">
+                    <i class="fas fa-plus"></i> New Task
+                </button>
+
+            </section>
+
+            <section class="recent-tasks">
+                <h3>Recent Tasks</h3>
+                @if (recentTasks?.Any() == true)
+                {
+                    <ul class="task-list">
+                        @foreach (var task in recentTasks)
+                        {
+                            <li class="task-item @GetTaskStatusClass(task.Status)">
+                                <input type="checkbox"
+                                checked="@(task.Status == TodoStatus.Completed)"
+                                @onchange="() => ToggleTask(task)" />
+                                <span class="task-title">@task.Title</span>
+                                <span class="task-due">@task.DueDate.ToString("MMM dd")</span>
+                            </li>
+                        }
+                    </ul>
+                }
+                else
+                {
+                    <p class="no-tasks">No tasks yet. Add your first one!</p>
+                }
+            </section>
+        </div>
+    </Authorized>
+    <NotAuthorized>
+        <p>You are not authorized to access this page.</p>
+    </NotAuthorized>
+</AuthorizeView>
+
+@code {
+    private List<TodoItemListResponse> todoItems;
+
+    protected override async Task OnInitializedAsync()
+    {
+        todoItems = await TodoItemService.GetAll();
+    }
+
+    private int totalTasks => todoItems?.Count ?? 0;
+    private int completedTasks => todoItems?.Count(x => x.Status == TodoStatus.Completed) ?? 0;
+    private int pendingTasks => todoItems?.Count(x => x.Status == TodoStatus.Pending || x.Status == TodoStatus.InProgress) ?? 0;
+
+    private List<TodoItemListResponse> recentTasks =>
+        todoItems?.OrderByDescending(x => x.DueDate).Take(5).ToList();
+
+    private string GetTaskStatusClass(TodoStatus status)
+    {
+        return status switch
+        {
+            TodoStatus.Completed => "completed",
+            TodoStatus.InProgress => "in-progress",
+            TodoStatus.Pending => "pending",
+            TodoStatus.Cancelled => "cancelled",
+            _ => ""
+        };
+    }
+
+    private async Task ToggleTask(TodoItemListResponse task)
+    {
+        task.Status = task.Status == TodoStatus.Completed ? TodoStatus.Pending : TodoStatus.Completed;
+        var result = await TodoItemService.UpdateStatus(task.Id, task.Status);
+        todoItems = await TodoItemService.GetAll();
+    }
+
+
+    private void NavigateToCompleted()
+    {
+        Navigation.NavigateTo($"/getByStatus?status={(int)TodoStatus.Completed}");
+    }
+
+    private void NavigateToPending()
+    {
+        Navigation.NavigateTo($"/getByStatus?status={(int)TodoStatus.Pending}");
+    }
+}

@@ -1,0 +1,132 @@
+﻿@page "/Account/EmailVerification"
+@using System.ComponentModel.DataAnnotations
+@using ToDoApp.Mobile.App.Services.Concrete
+@using ToDoApp.Mobile.App.Services.Interfaces
+@layout EmptyLayout
+@inject NavigationManager Navigation
+@inject ICustomAuthenticationStateProvider AuthProvider
+
+
+<HeadContent>
+    <link rel="stylesheet" href="css/emailVerification.css" />
+</HeadContent>
+
+
+<div class="auth-container">
+    <div class="auth-background d-none d-md-flex">
+        <div class="overlay"></div>
+        <div class="feature-content">
+            <h2>Verify Your Email</h2>
+            <p>Please check your inbox for the verification code</p>
+        </div>
+    </div>
+
+    <div class="auth-form-container">
+        <div class="auth-form">
+            <div class="logo-container">
+                <img src="/images/logo.svg" alt="Company Logo" class="logo">
+            </div>
+
+            <h3 class="welcome-text">Verify your email</h3>
+            <p class="subtext">We sent a verification code to <strong>@Email</strong></p>
+
+            <EditForm Model="model" OnValidSubmit="VerifyCode" class="form">
+                <div class="form-group">
+                    <label for="code">Verification Code</label>
+                    <InputText @bind-Value="model.Code" id="code"
+                    class="form-control" placeholder="Enter 6-digit code" />
+                </div>
+
+                <button type="submit" class="btn-primary" disabled="@isLoading">
+                    @if (isLoading)
+                    {
+                        <span class="spinner-border spinner-border-sm" role="status"></span>
+                        <span> Verifying...</span>
+                    }
+                    else
+                    {
+                        <span>Verify Email</span>
+                    }
+                </button>
+
+                <div class="resend-code">
+                    Didn't receive the code? <a href="#" @onclick="ResendCode">Resend code</a>
+                </div>
+
+                @if (!string.IsNullOrEmpty(errorMessage))
+                {
+                    <div class="alert alert-danger">@errorMessage</div>
+                }
+            </EditForm>
+
+            <div class="auth-footer">
+                Verified your account? <a @onclick="GoToLogin">Sign in</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public string Email { get; set; }
+
+
+    private VerificationModel model = new VerificationModel();
+    private string errorMessage = "";
+    private bool isLoading = false;
+
+    protected override void OnInitialized()
+    {
+        if (string.IsNullOrEmpty(Email))
+        {
+            Navigation.NavigateTo("/register");
+        }
+    }
+
+    private async Task VerifyCode()
+    {
+        isLoading = true;
+        errorMessage = "";
+
+        try
+        {
+            var result = await AuthProvider.ConfirmUserValue(new EmailConfrmModel { Email = Email, Value = model.Code });
+            if (result) {
+                Navigation.NavigateTo("/login?verified=true");
+            }
+            else
+            {
+                errorMessage = "Verification failed. Please check your code and try again.";
+            }       
+        }
+        catch (Exception ex)
+        {
+            errorMessage = "Verification failed: " + ex.Message;
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void ResendCode()
+    {
+        // Yenidən kod göndərmək üçün backend API çağırışı
+    }
+
+
+    private void GoToLogin()
+    {
+        Navigation.NavigateTo("/Account/Login");
+    }
+
+
+    private class VerificationModel
+    {
+        [Required(ErrorMessage = "Verification code is required")]
+        [StringLength(6, MinimumLength = 6, ErrorMessage = "Code must be 6 digits")]
+        public string Code { get; set; }
+    }
+}
+

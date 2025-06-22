@@ -1,0 +1,125 @@
+﻿@page "/editTodo/{id}"
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+@using ToDoApp.Mobile.App.Models
+@using ToDoApp.Mobile.App.Models.Enums
+@using ToDoApp.Mobile.App.Services.Interfaces
+@attribute [Authorize]
+@inject AuthenticationStateProvider AuthStateProvider
+@inject ITodoItemService TodoItemService
+@inject NavigationManager Navigation
+
+<link rel="stylesheet" href="css/addpagestylesheet.css" />
+
+<AuthorizeView>
+    <Authorized>
+        <div class="add-container">
+            @if (todoList != null)
+            {
+                <header class="app-header">
+                    <h1 class="app-title">Edit Task</h1>
+                    <span class="app-subtitle">Organize your day efficiently</span>
+                </header>
+
+                <section class="form-container">
+                    <div class="form-group">
+                        <label for="title">Title</label>
+                        <input type="text" id="title" @bind="todoList.Title" placeholder="What needs to be done?" />
+                    </div>
+
+                    <div class="form-group">
+                        <label for="description">Description</label>
+                        <textarea id="description" @bind="todoList.Description" placeholder="Add details..."></textarea>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="dueDate">Due Date</label>
+                            <input type="date" id="dueDate" @bind="todoList.DueDate" />
+                        </div>
+
+                        <div class="form-group">
+                            <label for="status">Status</label>
+                            <select id="status" @bind="todoList.Status">
+                                <option value="@TodoStatus.Pending">Pending</option>
+                                <option value="@TodoStatus.InProgress">In Progress</option>
+                                <option value="@TodoStatus.Completed">Completed</option>
+                                <option value="@TodoStatus.Cancelled">Cancelled</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button class="stat-card" @onclick="@(() => Navigation.NavigateTo("/todos"))">
+                            Cancel
+                        </button>
+                        <button class="save-btn" @onclick="SaveChanges">Save Task</button>
+                    </div>
+                </section>
+            }
+            else
+            {
+                <div class="loading-state">
+                    <span class="icon">⏳</span>
+                    <p>Loading...</p>
+                </div>
+            }
+        </div>
+    </Authorized>
+    <NotAuthorized>
+        <p>You are not authorized to access this page.</p>
+    </NotAuthorized>
+</AuthorizeView>
+
+@code {
+    [Parameter]
+    public string Id { get; set; }
+
+    private TodoItemUpdateRequest todo = new TodoItemUpdateRequest();
+    private TodoItemListResponse todoList;
+    private string errorMessage = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (int.TryParse(Id, out var todoId))
+        {
+            var response = await TodoItemService.GetById(todoId);
+            if (response != null)
+            {
+                todoList = response;
+            }
+            else
+            {
+                errorMessage = "Tapşırıq tapılmadı";
+                Navigation.NavigateTo("/todos");
+            }
+        }
+        else
+        {
+            Navigation.NavigateTo("/todos");
+        }
+    }
+
+    private async Task SaveChanges()
+    {
+        if (string.IsNullOrWhiteSpace(todoList.Title))
+        {
+            errorMessage = "Başlıq tələb olunur";
+            return;
+        }
+        todo.Id = todoList.Id;
+        todo.Title = todoList.Title;
+        todo.Description = todoList.Description;
+        todo.DueDate = todoList.DueDate;
+        todo.Status = todoList.Status;
+        var result = await TodoItemService.Update(todo);
+        if (result != null)
+        {
+            Navigation.NavigateTo("/todos");
+        }
+        else
+        {
+            errorMessage = "Yeniləmə uğursuz oldu";
+        }
+    }
+}

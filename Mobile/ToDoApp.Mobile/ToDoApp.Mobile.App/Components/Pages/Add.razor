@@ -1,0 +1,132 @@
+﻿@page "/add"
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+@using ToDoApp.Mobile.App.Models
+@using ToDoApp.Mobile.App.Models.Enums
+@using ToDoApp.Mobile.App.Services.Interfaces
+@attribute [Authorize]
+@inject AuthenticationStateProvider AuthStateProvider
+@inject NavigationManager Navigation
+@inject ITodoItemService TodoItemService
+
+<link rel="stylesheet" href="css/addpagestylesheet.css" />
+
+<AuthorizeView>
+    <Authorized>
+        <div class="add-container">
+            <header class="app-header">
+                <h1 class="app-title">Add New Task</h1>
+                <span class="app-subtitle">Organize your day efficiently</span>
+            </header>
+
+            <section class="form-container">
+                <!-- Title Field with Error -->
+                <div class="form-group">
+                    <label for="title">Title</label>
+                    <input type="text" id="title" @bind="newTask.Title" placeholder="What needs to be done?"
+                           class="@(showError && string.IsNullOrWhiteSpace(newTask.Title) ? "input-error" : "")" />
+                    @if (showError && string.IsNullOrWhiteSpace(newTask.Title))
+                    {
+                        <div class="error-message">
+                            <span class="error-icon">!</span>
+                            @errorMessage
+                        </div>
+                    }
+                </div>
+
+                <div class="form-group">
+                    <label for="description">Description</label>
+                    <textarea id="description" @bind="newTask.Description" placeholder="Add details..."></textarea>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="dueDate">Due Date</label>
+                        <input type="date" id="dueDate" @bind="newTask.DueDate" />
+                    </div>
+
+                    <div class="form-group">
+                        <label for="status">Status</label>
+                        <select id="status" @bind="newTask.Status">
+                            <option value="@TodoStatus.Pending">Pending</option>
+                            <option value="@TodoStatus.InProgress">In Progress</option>
+                            <option value="@TodoStatus.Completed">Completed</option>
+                            <option value="@TodoStatus.Cancelled">Cancelled</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button class="stat-card" @onclick="@(() => Navigation.NavigateTo("/"))">
+                        Cancel
+                    </button>
+                    <button class="save-btn" @onclick="SaveTask">Save Task</button>
+                </div>
+            </section>
+
+            <!-- Toast Notification -->
+            @if (showError && !string.IsNullOrWhiteSpace(errorMessage) && !string.IsNullOrWhiteSpace(newTask.Title))
+            {
+                <div class="toast-notification">
+                    <div class="toast-content">
+                        <span class="toast-icon">⚠️</span>
+                        @errorMessage
+                        <button class="toast-close" @onclick="() => showError = false">×</button>
+                    </div>
+                </div>
+            }
+        </div>
+    </Authorized>
+    <NotAuthorized>
+        <p>You are not authorized to access this page.</p>
+    </NotAuthorized>
+</AuthorizeView>
+
+@code {
+    private TodoItemCreateRequest newTask = new()
+        {
+            DueDate = DateTime.Today,
+            Status = TodoStatus.Pending
+        };
+    private string errorMessage = string.Empty;
+    private bool showError = false;
+
+    private async Task SaveTask()
+    {
+        showError = false;
+        errorMessage = string.Empty;
+
+        if (string.IsNullOrWhiteSpace(newTask.Title))
+        {
+            errorMessage = "Title is required";
+            showError = true;
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(newTask.Description))
+        {
+            errorMessage = "Title is required";
+            showError = true;
+            return;
+        }
+
+        try
+        {
+            var result = await TodoItemService.Create(newTask);
+            if (!result)
+            {
+                errorMessage = "An unexpected error occurred. Please try again.";
+                showError = true;
+            }
+            else
+            {
+                Navigation.NavigateTo("/");
+            }
+        }
+        catch
+        {
+            errorMessage = "Failed to connect to server. Please check your connection.";
+            showError = true;
+        }
+    }
+}

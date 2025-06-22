@@ -1,0 +1,36 @@
+﻿@using Microsoft.AspNetCore.Components.Authorization
+@using ToDoApp.Mobile.App.Services.Concrete
+@using ToDoApp.Mobile.App.Services.Interfaces
+@inject AuthenticationStateProvider authenticationStateProvider;
+@inject NavigationManager Navigation
+@inject IApplicationCloser AppCloser
+@inject IJSRuntime JSRuntime
+
+
+<NavLink class="nav-link" @onclick="Logout" Match="NavLinkMatch.Prefix">
+     <i class="fas fa-sign-out-alt"></i> &nbsp;&nbsp; Sign out
+
+</NavLink>
+
+@code {
+    private async Task Logout()
+    {
+        try
+        {
+            var customAuthStateProvider = (CustomAuthenticationStateProvider)authenticationStateProvider;
+
+            // Clear authentication first
+            await customAuthStateProvider.UpdateAuthenticationState(null, false);
+
+            // Add slight delay to ensure state is cleared
+            await Task.Delay(500);
+
+            await JSRuntime.InvokeVoidAsync("logLogoutSuccess");           
+            
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Logout error: {ex.Message}");
+        }
+    }
+}

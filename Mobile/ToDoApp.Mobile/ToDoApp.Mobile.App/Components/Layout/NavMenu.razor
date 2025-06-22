@@ -1,0 +1,68 @@
+﻿@using Microsoft.AspNetCore.Components.Authorization
+@using System.Security.Claims
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" />
+
+<div class="top-row ps-3 navbar navbar-dark">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="">@userEmail</a>
+    </div>
+</div>
+
+<input type="checkbox" title="Navigation menu" class="navbar-toggler" />
+
+<div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
+    <nav class="flex-column">
+        <!-- Home -->
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="/" Match="NavLinkMatch.All">
+                <span class="fas fa-home" aria-hidden="true"></span>&nbsp;&nbsp; Home
+            </NavLink>
+        </div>
+
+        <!-- All Tasks -->
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="/todos" Match="NavLinkMatch.Prefix">
+                <span class="fas fa-tasks" aria-hidden="true"></span>&nbsp;&nbsp; All Tasks
+            </NavLink>
+        </div>
+
+        <!-- New Task -->
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="/add" Match="NavLinkMatch.All">
+                <span class="fas fa-plus-circle" aria-hidden="true"></span>&nbsp;&nbsp; New Task
+            </NavLink>
+        </div>
+
+        <!-- Account -->
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="/account" Match="NavLinkMatch.Prefix">
+                <span class="fas fa-user" aria-hidden="true"></span>&nbsp;&nbsp; Account
+            </NavLink>
+        </div>
+
+        <!-- Logout -->
+        <div class="nav-item px-3">
+            <LogOut />
+        </div>
+    </nav>
+</div>
+
+
+
+@code{
+    private string userEmail;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (user.Identity is { IsAuthenticated: true })
+        {
+            userEmail = user.FindFirst(c => c.Type == ClaimTypes.Name)?.Value;
+        
+        }
+    }
+}

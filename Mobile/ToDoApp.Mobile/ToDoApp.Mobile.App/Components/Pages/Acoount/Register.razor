@@ -1,0 +1,139 @@
+﻿@page "/Account/Register"
+@using System.ComponentModel.DataAnnotations
+@using ToDoApp.Mobile.App.Services.Concrete
+@using ToDoApp.Mobile.App.Services.Interfaces
+@layout EmptyLayout
+@inject NavigationManager Navigation
+@inject ICustomAuthenticationStateProvider AuthProvider
+
+
+<HeadContent>
+    <link rel="stylesheet" href="css/register.css" />
+</HeadContent>
+
+<div class="auth-container">
+    <div class="auth-background d-none d-md-flex">
+        <div class="overlay"></div>
+        <div class="feature-content">
+            <h2>Join Us!</h2>
+            <p>Start managing your tasks efficiently with our platform</p>
+        </div>
+    </div>
+
+    <div class="auth-form-container">
+        <div class="auth-form">
+            <div class="logo-container">
+                <img style="width:100px" src="/logo/todo.gif" />
+            </div>
+
+            <h3 class="welcome-text">Create your account</h3>
+            <p class="subtext">Fill in your details to get started</p>
+
+            <EditForm Model="model" OnValidSubmit="HandleRegistration" class="form">
+                <DataAnnotationsValidator />
+
+                <div class="form-group">
+                    <label for="name">Full Name</label>
+                    <InputText @bind-Value="model.Name" id="name"
+                    class="form-control" placeholder="Enter your full name" />
+                    <ValidationMessage For="@(() => model.Name)" />
+                </div>
+
+                <div class="form-group">
+                    <label for="email">Email Address</label>
+                    <InputText @bind-Value="model.Email" id="email"
+                    class="form-control" placeholder="Enter your email" />
+                    <ValidationMessage For="@(() => model.Email)" />
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <div class="password-input">
+                        <InputText @bind-Value="model.Password"
+                        type="@(showPassword ? "text" : "password")"
+                        class="form-control"
+                        placeholder="Create a password"
+                        @ref="passwordInputRef" />
+
+                    </div>
+                    <ValidationMessage For="@(() => model.Password)" />
+                </div>
+
+                <div class="form-group">
+                    <div class="terms-agreement">
+                        <InputCheckbox @bind-Value="model.AgreeToTerms" id="terms" />
+                        <label for="terms">I agree to the <a href="/terms">Terms of Service</a> and <a href="/privacy">Privacy Policy</a></label>
+                    </div>
+                    <ValidationMessage For="@(() => model.AgreeToTerms)" />
+                </div>
+
+                <button type="submit" class="btn-primary" disabled="@isLoading">
+                    @if (isLoading)
+                    {
+                        <span class="spinner-border spinner-border-sm" role="status"></span>
+                        <span> Creating Account...</span>
+                    }
+                    else
+                    {
+                        <span>Register</span>
+                    }
+                </button>
+
+                @if (!string.IsNullOrEmpty(errorMessage))
+                {
+                    <div class="alert alert-danger">@errorMessage</div>
+                }
+            </EditForm>
+
+            <div class="divider">
+                <span>or</span>
+            </div>
+
+            <div class="auth-footer">
+                Already have an account? <a style="color: #667eea;" @onclick="GoToLogin">Sign in</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private RegisterPageModel model = new RegisterPageModel();
+    private string errorMessage = "";
+    private bool isLoading = false;
+    private bool showPassword = false;
+    private InputText passwordInputRef;
+
+    private async Task HandleRegistration()
+    {
+        isLoading = true;
+        errorMessage = "";
+
+        try
+        {
+            var result = await AuthProvider.Register(new CreateRegisterModel { Email = model.Email, Name = model.Name, Password = model.Password });
+            if (result.IsSuccess)
+            {
+                Navigation.NavigateTo("/Account/EmailVerification?email=" + Uri.EscapeDataString(model.Email));
+            }
+            else
+            {
+                errorMessage = result.Message;
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = "Registration failed: " + ex.Message;
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void GoToLogin()
+    {
+        Navigation.NavigateTo("/Account/Login");
+    }
+}
+
+
