@@ -1,0 +1,44 @@
+﻿@using ToDoApp.Mobile.App.Services.Interfaces
+@inject IToastService ToastService
+
+
+<link rel="stylesheet" href="css/site.css" />
+
+@if (Visible)
+{
+         <div class="toast @ToastCssClass @(Visible ? "show" : "")">
+        @Message
+    </div>
+}
+
+@code {
+    private string Message { get; set; } = string.Empty;
+    private ToastType Type { get; set; } = ToastType.Info;
+    private bool Visible { get; set; }
+
+    protected override void OnInitialized()
+    {
+        ToastService.OnShow += ShowToast;
+    }
+
+    private async void ShowToast(string message, ToastType type)
+    {
+        Message = message;
+        Type = type;
+        Visible = true;
+        StateHasChanged();
+
+        await Task.Delay(3000);
+
+        Visible = false;
+        StateHasChanged();
+    }
+
+    private string ToastCssClass => Type switch
+    {
+        ToastType.Success => "toast-success",
+        ToastType.Error => "toast-error",
+        ToastType.Warning => "toast-warning",
+        _ => "toast-info"
+    };
+}

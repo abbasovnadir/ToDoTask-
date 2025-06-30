@@ -17,6 +17,7 @@ namespace ToDoApp.BackEnd.Application.Interfaces.Services
         Task<IResult> UserEmailConfirm(EmailConfirmDto dto);
         Task<IResult> SendConfirmEmail(string email);
         Task<IResult> ChangePasword(string email, string newPassword, string secretKey);
+        Task<IResult> ChangePaswordWithOldPassword(string email, string oldPassword, string newPassword);
 
         Task<IResult> SendEmailForChangePassword(string email, EmailTemporaryValueTypes valueType, EmailTemplateTypes templateTypes);
     }

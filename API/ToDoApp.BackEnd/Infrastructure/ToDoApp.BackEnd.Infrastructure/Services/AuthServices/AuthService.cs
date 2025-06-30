@@ -64,7 +64,9 @@ public class AuthService : IAuthService
                 Id = user.Id,
                 IsExist = true,
                 Role = userRoles.Select(x => x.Name).ToArray(),
-                Username = user.Name
+                Username = user.Name,
+                Email = user.Email,
+                MemberSince = user.CreatedAt.ToString("MMMM dd yyyy")
             };
 
             return new SuccessDataResult<CheckUserResponseDto>(result, ResponseTypes.Success);
@@ -423,6 +425,46 @@ public class AuthService : IAuthService
         catch (Exception)
         {
             return result;
+        }
+    }
+
+    public async Task<IResult> ChangePaswordWithOldPassword(string email, string oldPassword, string newPassword)
+    {
+
+        try
+        {
+            var user = await _unitOfWork.UserReadRepository<AppUser>().GetFilterAsync(x => x.Email == email);
+            if (user == null)
+                return new ErrorResult(ResponseTypes.NotFound, "User with the specified email not found.");
+            if (!_hashingService.VerifyPasswordHash(oldPassword, user.PaswordHash, user.PaswordSalt))
+                return new ErrorDataResult<AppUser>(ResponseTypes.Invalid, $"Password is invalid");
+
+            _unitOfWork.BeginTransaction();
+            try
+            {
+                #region create HasPassword
+                byte[] passwordHash, passwordSalt;
+                _hashingService.CreatePasswordHash(newPassword, out passwordHash, out passwordSalt);
+                #endregion
+
+                user.PaswordHash = passwordHash;
+                user.PaswordSalt = passwordSalt;
+                _unitOfWork.UserWriteRepository<AppUser>().Update(x => x.Id == user.Id, user);            
+
+                await _unitOfWork.SaveChangesAsync();
+                await _unitOfWork.CommitTransactionAsync();
+            }
+            catch (Exception ex)
+            {
+                await _unitOfWork.RollbackTransactionAsync();
+                return new ErrorResult(ResponseTypes.Exception, ex.Message);
+            }
+
+            return new SuccessResult(ResponseTypes.Success);
+        }
+        catch (Exception ex)
+        {
+            return new ErrorResult(ResponseTypes.Exception, ex.Message);
         }
     }
 }

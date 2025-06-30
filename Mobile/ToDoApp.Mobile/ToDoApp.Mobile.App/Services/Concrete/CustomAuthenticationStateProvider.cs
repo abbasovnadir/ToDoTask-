@@ -40,6 +40,27 @@ namespace ToDoApp.Mobile.App.Services.Concrete
                 return new AccountResponseModel() { IsSuccess = false, Message = ex.Message };
             }
         }
+        public async Task<AccountResponseModel> ChangePasswordWithOldPassword(ChangePasswordDto dto)
+        {
+            try
+            {
+                var content = new StringContent(JsonSerializer.Serialize(dto), System.Text.Encoding.UTF8, "application/json");
+
+                var response = await _http.PutAsync("/api/Auth/ChangePaswordWithOldPassword", content);
+                if (!response.IsSuccessStatusCode)
+                {
+                    var errorContent = await response.Content.ReadFromJsonAsync<Dictionary<string, string>>();
+                    string message = errorContent?["message"] ?? "An unknown error occurred.";
+                    return new AccountResponseModel() { IsSuccess = false, Message = message };
+                }
+
+                return new AccountResponseModel() { IsSuccess = true, Message = string.Empty };
+            }
+            catch (Exception ex)
+            {
+                return new AccountResponseModel() { IsSuccess = false, Message = ex.Message };
+            }
+        }
         public async Task<bool> ConfirmUserValue(EmailConfrmModel model)
         {
             try
@@ -107,8 +128,10 @@ namespace ToDoApp.Mobile.App.Services.Concrete
 
                 var userName = token.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Name)?.Value;
                 var userId = token.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
+                var email = token.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Email).Value;
+                var memberSince = token.Claims.FirstOrDefault(c => c.Type == "MemberSince").Value;
 
-                await UpdateAuthenticationState(new UserSession(userId, userName, roles, tokenResponse.AccessToken), rememberMe);
+                await UpdateAuthenticationState(new UserSession(userId, userName,email, memberSince, roles, tokenResponse.AccessToken), rememberMe);
 
                 return new AccountResponseModel() { IsSuccess = true, Message = string.Empty };
             }
@@ -200,6 +223,8 @@ namespace ToDoApp.Mobile.App.Services.Concrete
                     claims.Add(new Claim(ClaimTypes.Role, item));
                 }
                 claims.Add(new Claim(ClaimTypes.Name, userSession.UserName));
+                claims.Add(new Claim(ClaimTypes.Email, userSession.Email));
+                claims.Add(new Claim("MemberSince", userSession.MemberSince));
                 claims.Add(new Claim("AccessToken", userSession.AccessToken));
 
                 var claimsPrincipal = new ClaimsPrincipal(new ClaimsIdentity(claims, "CustomAuth"));

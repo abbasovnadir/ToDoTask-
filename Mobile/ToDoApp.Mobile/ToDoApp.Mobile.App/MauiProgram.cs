@@ -23,7 +23,8 @@ namespace ToDoApp.Mobile.App
             builder.Services.AddSingleton<AuthenticationService>();
             builder.Services.AddScoped<ResetPassState>();
             builder.Services.AddScoped<AuthenticationStateProvider, CustomAuthenticationStateProvider>();
-            builder.Services.AddScoped<ICustomAuthenticationStateProvider, CustomAuthenticationStateProvider>();
+            builder.Services.AddScoped<ICustomAuthenticationStateProvider, CustomAuthenticationStateProvider>(); 
+            builder.Services.AddSingleton<IToastService, ToastService>();
             builder.Services.AddBlazoredLocalStorage();
             builder.Services.AddAuthorizationCore();
 
@@ -54,7 +55,7 @@ namespace ToDoApp.Mobile.App
                 var client = new HttpClient(handler)
                 {
                     BaseAddress = new Uri("https://freetestapi.bsite.net")
-                    //BaseAddress = new Uri("http://localhost:5120") 
+                    //BaseAddress = new Uri("http://localhost:5120")
                 };
 
                 return client;

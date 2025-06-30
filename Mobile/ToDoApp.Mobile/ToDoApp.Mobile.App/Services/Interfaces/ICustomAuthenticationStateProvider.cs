@@ -9,4 +9,5 @@ internal interface ICustomAuthenticationStateProvider
     Task<bool> ConfirmUserValue(EmailConfrmModel model);
     Task<AccountResponseModel> SendChangePasswordEmail(SendEmailChangePasswordDto dto);
     Task<AccountResponseModel> ChangePassword(ChangePasswordDto dto);
+    Task<AccountResponseModel> ChangePasswordWithOldPassword(ChangePasswordDto dto);
 }

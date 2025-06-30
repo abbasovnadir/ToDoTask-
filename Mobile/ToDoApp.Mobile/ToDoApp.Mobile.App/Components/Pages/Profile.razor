@@ -1,0 +1,288 @@
+﻿@page "/profile"
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+@using System.Security.Claims
+@using ToDoApp.Mobile.App.Models.Enums
+@using ToDoApp.Mobile.App.Services.Interfaces
+@attribute [Authorize]
+@inject NavigationManager Navigation
+@inject AuthenticationStateProvider authStateProvider
+@inject ITodoItemService TodoItemService
+@inject ICustomAuthenticationStateProvider _customAuthentication;
+@inject IToastService ToastService
+
+<link rel="stylesheet" href="css/profile.css" />
+
+<div class="profile-container">
+    <header class="app-header">
+        <h1 class="app-title">User Profile</h1>
+        <span class="app-subtitle">Manage your account details</span>
+    </header>
+
+    <section class="profile-section">
+        <div class="profile-header">
+            <div class="profile-image-container">
+                <img class="profile-image" src="/img/noProfilPhoto.jpg" alt="Profile" />
+            </div>
+            <div class="profile-info">
+             @*    <div class="name-edit-container">
+                    <h2 class="profile-name">Nadir Abbasov</h2>
+                    <button class="edit-name-btn">
+                        <svg class="edit-icon" viewBox="0 0 24 24">
+                            <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" />
+                        </svg>
+                    </button>
+                </div> *@
+                <div class="profile-detail">
+                    <span class="detail-label">Username:</span>
+                    <span class="detail-value">@_userName</span>
+                </div>
+                <div class="profile-detail">
+                    <span class="detail-label">Email:</span>
+                    <span class="detail-value">@_email</span>
+                </div>
+                <div class="profile-detail">
+                    <span class="detail-label">Member since:</span>
+                    <span class="detail-value">@_memberSince</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="stats-container profile-stats">
+            <div class="stat-card">
+                <span class="stat-number">@_totalTasks</span>
+                <span class="stat-label">Total Tasks</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-number">@_completedTasks</span>
+                <span class="stat-label">Completed</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-number">@_pendingTasks</span>
+                <span class="stat-label">Pending</span>
+            </div>
+        </div>
+
+        <div class="change-password-section">
+            <h3>Change Password</h3>
+            <div class="password-form">
+                <input class="password-input" @bind-value="@model.OldPassword" type="password" placeholder="Current Password" />
+                <input class="password-input" @bind-value="@model.NewPassword" type="password" placeholder="New Password" />
+                <input class="password-input" @bind-value="@confirmPassword" type="password" placeholder="Confirm New Password" />
+                <button class="password-button" style="color:black; border: 1px solid black;" @onclick="ChangePassword" disabled="@isLoading">
+                     @(isLoading ? validationMessage : "Update Password") 
+                    
+                </button>
+            </div>
+        </div>
+
+
+
+        <section class="recent-tasks">
+            <h3>Task History</h3>
+            <ul class="task-list">
+                @foreach (var item in pagginatedData)
+                {
+                    <li class="task-item completed">
+                        <span class="task-title">@item.Title</span>
+                        <span class="task-status">@((MarkupString)GetStatusHtml(item.Status))</span>
+                        <span class="task-due">@item.DueDate.ToShortDateString()</span>
+                    </li>
+                }
+            </ul>
+
+            <div class="pagination">
+                <button class="page-button" style="color:#bc00ff" @onclick="GetPrevData" disabled="@((currentPage == 1))">Previous</button>
+                <span class="page-info">Page @currentPage of @totalPageCount</span>
+                <button class="page-button" style="color:#bc00ff" @onclick="GetNextData" disabled="@((currentPage == totalPageCount))">Next</button>
+            </div>
+        </section>
+
+
+    </section>
+</div>
+
+
+@code {
+    ChangePasswordDto model = new ChangePasswordDto();
+    private string confirmPassword;
+    private bool isSuccess = false;
+    private bool isLoading = false;
+    private string validationMessage = "Updating";
+    private string _userName;
+    private string _email;
+    private string _memberSince;
+    private List<string> _roles = new();
+    private List<TodoItemListResponse> todoItems;
+    private List<TodoItemListResponse> pagginatedData = new List<TodoItemListResponse>();
+
+    private int currentPage = 1;
+    private int totalItem = 5;
+    private int totalPageCount = 1;
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await authStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        if (user.Identity?.IsAuthenticated ?? false)
+        {
+            _userName = user.Identity.Name;
+            _email = user.FindFirst(c => c.Type == ClaimTypes.Email).Value ?? "No email";
+            _memberSince = user.FindFirst(c => c.Type == "MemberSince")?.Value ?? "N/A";
+            _roles = user.Claims
+                      .Where(c => c.Type == ClaimTypes.Role)
+                      .Select(c => c.Value)
+                      .ToList();
+
+
+            todoItems = await TodoItemService.GetAll();
+
+            totalPageCount = (int)Math.Ceiling((double)todoItems.Count / totalItem);
+
+            LoadCurrentPage();
+
+        }
+    }
+
+    private int _totalTasks => todoItems?.Count ?? 0;
+    private int _completedTasks => todoItems?.Count(x => x.Status == TodoStatus.Completed) ?? 0;
+    private int _pendingTasks => todoItems?.Count(x => x.Status == TodoStatus.Pending || x.Status == TodoStatus.InProgress) ?? 0;
+
+    private void LoadCurrentPage()
+    {
+        pagginatedData = todoItems
+            .OrderByDescending(x => x.Id)
+            .Skip((currentPage - 1) * totalItem)
+            .Take(totalItem)
+            .ToList();
+    }
+
+    private void GetNextData()
+    {
+        if (currentPage < totalPageCount)
+        {
+            currentPage++;
+            LoadCurrentPage();
+        }
+    }
+
+    private void GetPrevData()
+    {
+        if (currentPage > 1)
+        {
+            currentPage--;
+            LoadCurrentPage();
+        }
+    }
+
+    private string GetStatusHtml(TodoStatus status)
+    {
+        return status switch
+        {
+            TodoStatus.Pending => "<span style='color: orange; font-weight: bold;'>Pending</span>",
+            TodoStatus.InProgress => "<span style='color: blue; font-weight: bold;'>In Progress</span>",
+            TodoStatus.Completed => "<span style='color: green; font-weight: bold;'>Completed</span>",
+            TodoStatus.Cancelled => "<span style='color: red; font-weight: bold;'>Cancelled</span>",
+            _ => "<span style='color: gray;'>Unknown</span>"
+        };
+    }
+
+    private async Task ChangePassword()
+    {
+        try
+        {            
+            isSuccess = false;
+            isLoading = true;
+            validationMessage = "Updating";
+
+            if (string.IsNullOrWhiteSpace(model.OldPassword))
+            {
+                validationMessage = "Old password can't be empty";
+                ToastService.ShowToast(validationMessage, ToastType.Warning);
+                await ResetMessage();
+                return;
+            }
+            if (string.IsNullOrWhiteSpace(model.NewPassword))
+            {
+                validationMessage = "New password can't be empty";
+                ToastService.ShowToast(validationMessage, ToastType.Warning);
+                await ResetMessage();
+                return;
+            }
+            if (string.IsNullOrWhiteSpace(confirmPassword))
+            {
+                validationMessage = "Confirm password can't be empty";
+                ToastService.ShowToast(validationMessage, ToastType.Warning);
+                await ResetMessage();
+                return;
+            }
+            if (model.NewPassword == model.OldPassword)
+            {
+                validationMessage = "New password cannot be the same as the current password.";
+                ToastService.ShowToast(validationMessage, ToastType.Warning);
+                await ResetMessage();
+                return;
+            }
+            if (model.NewPassword != confirmPassword)
+            {
+                validationMessage = "Confirm password does not match the new password.";
+                ToastService.ShowToast(validationMessage, ToastType.Warning);
+                await ResetMessage();
+                return;
+            }
+
+            model.UserEmail = _email;
+            var result = await _customAuthentication.ChangePasswordWithOldPassword(model);
+
+            isLoading = false;
+
+            isSuccess = result.IsSuccess;
+            if (isSuccess)
+            {
+                await ResetMessage();
+                model = new ChangePasswordDto();
+                confirmPassword = string.Empty;
+                ToastService.ShowToast("Your password changed", ToastType.Success);
+            }
+            else
+            {
+                ToastService.ShowToast(result.Message, ToastType.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowToast(ex.Message, ToastType.Error);
+        }
+        finally{
+            isLoading = false; 
+        }
+    }
+
+    private async Task ResetMessage()
+    {
+        await Task.Delay(2000);
+        validationMessage = "Update Password";
+    }
+
+    @* 
+      <button class="btn btn-success" @onclick="() => ShowMyToast(ToastType.Success)">Success Toast</button>
+<button class="btn btn-danger" @onclick="() => ShowMyToast(ToastType.Error)">Error Toast</button>
+<button class="btn btn-primary" @onclick="() => ShowMyToast(ToastType.Info)">Info Toast</button>
+<button class="btn btn-warning" @onclick="() => ShowMyToast(ToastType.Warning)">Warning Toast</button> 
+    private void ShowMyToast(ToastType toastType)
+    {
+        string message = toastType switch
+        {
+            ToastType.Success => "Success",
+            ToastType.Error => "Error",
+            ToastType.Warning => "Warning",
+            ToastType.Info => "Info",
+            _ => string.Empty
+        };
+
+        ToastService.ShowToast(message, toastType);
+    }
+    *@
+
+}

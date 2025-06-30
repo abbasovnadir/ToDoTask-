@@ -40,6 +40,9 @@ public class TokenService : ITokenService
 
             claims.Add(new Claim(ClaimTypes.NameIdentifier, dto.Id.ToString()));
 
+            claims.Add(new Claim("MemberSince", dto.MemberSince));
+            claims.Add(new Claim(ClaimTypes.Email, dto.Email));
+
             var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(JwtDefaults.Key));
             SigningCredentials credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
 

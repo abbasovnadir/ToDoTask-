@@ -143,6 +143,19 @@ namespace ToDoApp.BackEnd.API.Controllers
             return Ok(result);
         }
 
+        [HttpPut("changePaswordWithOldPassword")]
+        public async Task<IActionResult> ChangePaswordWithOldPassword([FromBody] ChangePasswordDto dto)
+        {
+            var result = await _authService.ChangePaswordWithOldPassword(dto.UserEmail, dto.OldPassword, dto.NewPassword);
+
+            if (!result.IsSuccess)
+            return BadRequest(new { message = result.Message });
+
+            _logger.LogInformation("ChangePassword success.");
+
+            return Ok(result);
+        }
+
         [HttpGet("checkIsConfirmMail")]
         public async Task<IActionResult> CheckIsConfirmMail(string userEmail)
         {
