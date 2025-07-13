@@ -7,7 +7,11 @@ using ToDoApp.BackEnd.Domain.Enums;
 namespace ToDoApp.BackEnd.Application.Features.CQRS.ToDoFeatures.Commands;
 public class CreateTodoItemCommand : CreateCommandBase<IDataResult<TodoItemListDto>>
 {
-    public CreateTodoItemCommand(string title, string description, DateTime dueDate, TodoStatus status, Guid userId, string createdUser, CommandInfo rowStatus) : base(createdUser, rowStatus)
+    public CreateTodoItemCommand(string title, string description, 
+                                 DateTime dueDate, TodoStatus status, 
+                                 Guid userId, string createdUser, 
+                                 CommandInfo rowStatus) 
+                                : base(createdUser, rowStatus)
     {
         Title = title;
         Description = description;

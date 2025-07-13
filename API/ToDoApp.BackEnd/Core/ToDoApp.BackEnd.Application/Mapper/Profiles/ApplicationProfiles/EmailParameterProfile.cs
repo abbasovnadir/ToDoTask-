@@ -1,5 +1,5 @@
 ﻿using ToDoApp.BackEnd.Application.Dtos.ApplicationDtos;
-using ToDoApp.BackEnd.Application.Features.CQRS.ApplicationOperations.Commands.EmailParameterCommands;
+using ToDoApp.BackEnd.Application.Features.CQRS.ApplicationOperationFeatures.Commands.EmailParameterCommands;
 using ToDoApp.BackEnd.Application.Mapper.Profiles.Common;
 using ToDoApp.BackEnd.Domain.Entities.ApplicationEntities;
 

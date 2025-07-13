@@ -9,7 +9,8 @@ using ToDoApp.BackEnd.Domain.Entities;
 namespace ToDoApp.BackEnd.Application.Features.CQRS.ToDoFeatures.Handlers;
 internal sealed class UpdateTodoItemCommandHandler : BaseUpdateCommandHandler<UpdateTodoItemCommand, TodoItem, TodoItemListDto>
 {
-    public UpdateTodoItemCommandHandler(IUnitOfWork uow, IMapper mapper, IValidator<UpdateTodoItemCommand> validator) : base(uow, mapper, validator)
+    public UpdateTodoItemCommandHandler(IUnitOfWork uow, IMapper mapper, IValidator<UpdateTodoItemCommand> validator)
+                                        : base(uow, mapper, validator)
     {
     }
 }

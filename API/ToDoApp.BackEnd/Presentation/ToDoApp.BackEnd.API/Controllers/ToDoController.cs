@@ -2,11 +2,11 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ToDoApp.BackEnd.API.ApiDtos.ToDoItems;
-using ToDoApp.BackEnd.API.Attributes;
 using ToDoApp.BackEnd.Application.Features.CQRS.ToDoFeatures.Commands;
 using ToDoApp.BackEnd.Application.Features.CQRS.ToDoFeatures.Queries;
 using ToDoApp.BackEnd.Application.Utilities.Enums;
 using ToDoApp.BackEnd.Domain.Enums;
+using ToDoApp.BackEnd.API.Extensions;
 
 namespace ToDoApp.BackEnd.API.Controllers;
 
@@ -20,77 +20,46 @@ public class ToDoController : BaseController
     {
         _mediator = mediator;
     }
-       
+
 
     [HttpGet("user")]
     public async Task<IActionResult> GetUserTodos()
     {
         var result = await _mediator.Send(new GetByFilterIdTodoItemQuery(x => x.UserId == CurrentUser.UserId));
-        if (result.IsSuccess)
-        {
-            return Ok(result);
-        }
-        else
-        {
-            return BadRequest(result);
-        }
+        return result.ToActionResult(this);
     }
 
     [HttpGet("userByFilter")]
-    public async Task<IActionResult> GetUserTodosByFilter([FromQuery]  TodoStatus todoStatus)
+    public async Task<IActionResult> GetUserTodosByFilter([FromQuery] TodoStatus todoStatus)
     {
         var result = await _mediator.Send(new GetByFilterIdTodoItemQuery(x => x.UserId == CurrentUser.UserId && x.Status == todoStatus));
-        if (result.IsSuccess)
-        {
-            return Ok(result);
-        }
-        else
-        {
-            return BadRequest(result);
-        }
+        return result.ToActionResult(this);
     }
 
     [HttpGet("{id}")]
     public async Task<IActionResult> GetById(int id)
     {
         var result = await _mediator.Send(new GetByFilterIdTodoItemQuery(x => x.UserId == CurrentUser.UserId && x.ID == id));
-        if (result.IsSuccess)
-        {
-            return Ok(result);
-        }
-        else
-        {
-            return BadRequest(result);
-        }
+        return result.ToActionResult(this);
     }
 
     [HttpGet]
     public async Task<IActionResult> GetStaticDataByUser()
     {
         var result = await _mediator.Send(new GetByFilterIdTodoItemQuery(x => x.UserId == CurrentUser.UserId));
-        if (result.IsSuccess && result.Data.Count() > 0)
-        {
-            var pendingData = result.Data.Where(x => x.Status == Domain.Enums.TodoStatus.Pending && x.RowStatus);
-            var inProgressData = result.Data.Where(x => x.Status == Domain.Enums.TodoStatus.InProgress && x.RowStatus);
-            var complateData = result.Data.Where(x => x.Status == Domain.Enums.TodoStatus.Completed && x.RowStatus);
-            var canceledData = result.Data.Where(x => x.Status == Domain.Enums.TodoStatus.Cancelled && x.RowStatus);
-            var archiveData = result.Data.Where(x => !x.RowStatus);
-
-            return Ok(new
-            {
-                success = result.IsSuccess,
-                pendingData,
-                inProgressData,
-                complateData,
-                canceledData,
-                archiveData
-            });
-        }
-        else
-        {
-
+        if (!result.IsSuccess || result.Data is null || !result.Data.Any())
             return BadRequest(result);
-        }
+
+        var dto = new TodoStatusSummaryDto
+        {
+            Pending = result.Data.Where(x => x.Status == TodoStatus.Pending && x.RowStatus),
+            InProgress = result.Data.Where(x => x.Status == TodoStatus.InProgress && x.RowStatus),
+            Completed = result.Data.Where(x => x.Status == TodoStatus.Completed && x.RowStatus),
+            Canceled = result.Data.Where(x => x.Status == TodoStatus.Cancelled && x.RowStatus),
+            Archived = result.Data.Where(x => !x.RowStatus)
+        };
+
+        return Ok(new { success = true, data = dto });
     }
 
     [HttpPost]
@@ -106,18 +75,11 @@ public class ToDoController : BaseController
             CommandInfo.RowStatusIsActive);
 
         var result = await _mediator.Send(command);
-        if (result.IsSuccess)
-        {
-            return Ok(result);
-        }
-        else
-        {
-            return BadRequest(result);
-        }
+        return result.ToActionResult(this);
     }
 
     [HttpPut("{id}")]
-    public async Task<IActionResult> UpdateTodoItem(int id,TodoItemUpdateRequest request)
+    public async Task<IActionResult> UpdateTodoItem(int id, TodoItemUpdateRequest request)
     {
         var command = new UpdateTodoItemCommand(
             id,
@@ -130,14 +92,7 @@ public class ToDoController : BaseController
             request.Rowstatus);
 
         var result = await _mediator.Send(command);
-        if (result.IsSuccess)
-        {
-            return Ok(result);
-        }
-        else
-        {
-            return BadRequest(result);
-        }
+        return result.ToActionResult(this);
     }
 
     [HttpDelete("{id}")]
@@ -146,14 +101,7 @@ public class ToDoController : BaseController
         var command = new DeleteTodoItemCommand(id);
 
         var result = await _mediator.Send(command);
-        if (result.IsSuccess)
-        {
-            return Ok(result);
-        }
-        else
-        {
-            return BadRequest(result);
-        }
+        return result.ToActionResult(this);
     }
 
     //[HasAnyRole("Super Admin")]

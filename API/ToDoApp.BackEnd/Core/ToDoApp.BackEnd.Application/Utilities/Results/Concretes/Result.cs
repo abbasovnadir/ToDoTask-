@@ -8,7 +8,7 @@ public class Result : IResult
 {
     public Result(ResponseTypes responseTypes, bool success)
     {
-        ResponseTypes = responseTypes;
+        ResponseType = responseTypes;
         IsSuccess = success;
     }
     public Result(ResponseTypes responseTypes,bool success, string message) : this(responseTypes,success)
@@ -24,6 +24,6 @@ public class Result : IResult
 
     public string Message { get; }
 
-    public ResponseTypes ResponseTypes  { get; }
+    public ResponseTypes ResponseType  { get; }
     public List<CustomValidationError> CustomValidationErrors { get; set ; }
 }

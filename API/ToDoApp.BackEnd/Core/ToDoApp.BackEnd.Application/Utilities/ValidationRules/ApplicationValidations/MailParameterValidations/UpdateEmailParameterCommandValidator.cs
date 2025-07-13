@@ -1,4 +1,4 @@
-﻿using ToDoApp.BackEnd.Application.Features.CQRS.ApplicationOperations.Commands.EmailParameterCommands;
+﻿using ToDoApp.BackEnd.Application.Features.CQRS.ApplicationOperationFeatures.Commands.EmailParameterCommands;
 using ToDoApp.BackEnd.Application.Utilities.Enums;
 using FluentValidation;
 

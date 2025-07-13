@@ -2,10 +2,10 @@
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using ToDoApp.BackEnd.Application.Dtos.UserLoginDtos;
-using ToDoApp.BackEnd.Application.Features.CQRS.ApplicationOperations.Commands.EmailParameterCommands;
-using ToDoApp.BackEnd.Application.Features.CQRS.ApplicationOperations.Commands.EmailTemplateCommands;
-using ToDoApp.BackEnd.Application.Features.CQRS.ApplicationOperations.Handlers.EmailParameterHandlers;
-using ToDoApp.BackEnd.Application.Features.CQRS.ApplicationOperations.Handlers.EmailTemplateHandler;
+using ToDoApp.BackEnd.Application.Features.CQRS.ApplicationOperationFeatures.Commands.EmailParameterCommands;
+using ToDoApp.BackEnd.Application.Features.CQRS.ApplicationOperationFeatures.Commands.EmailTemplateCommands;
+using ToDoApp.BackEnd.Application.Features.CQRS.ApplicationOperationFeatures.Handlers.EmailParameterHandlers;
+using ToDoApp.BackEnd.Application.Features.CQRS.ApplicationOperationFeatures.Handlers.EmailTemplateHandler;
 using ToDoApp.BackEnd.Application.Features.CQRS.ToDoFeatures.Commands;
 using ToDoApp.BackEnd.Application.Features.CQRS.ToDoFeatures.Handlers;
 using ToDoApp.BackEnd.Application.Mapper.Profiles.Common;

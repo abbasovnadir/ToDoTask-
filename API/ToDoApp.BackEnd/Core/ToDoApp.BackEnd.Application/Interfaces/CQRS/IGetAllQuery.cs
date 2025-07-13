@@ -1,5 +1,5 @@
 ﻿using ToDoApp.BackEnd.Application.Utilities.Enums;
-using ICommand = ToDoApp.BackEnd.Application.Interfaces.CQRS.Common.ICommand;
+using  ToDoApp.BackEnd.Application.Interfaces.CQRS.Common;
 
 namespace ToDoApp.BackEnd.Application.Interfaces.CQRS;
 public interface IGetAllQuery : ICommand

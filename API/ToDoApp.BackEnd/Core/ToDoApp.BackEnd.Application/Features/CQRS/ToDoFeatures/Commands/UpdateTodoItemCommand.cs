@@ -7,7 +7,9 @@ using ToDoApp.BackEnd.Domain.Enums;
 namespace ToDoApp.BackEnd.Application.Features.CQRS.ToDoFeatures.Commands;
 public class UpdateTodoItemCommand : UpdateCommandBase<IDataResult<TodoItemListDto>>, IUpdateCommand
 {
-    public UpdateTodoItemCommand(int id, string title, string description, DateTime dueDate, TodoStatus status, Guid userId, string updatedUser, bool rowStatus) : base(id, updatedUser, rowStatus)
+    public UpdateTodoItemCommand(int id, string title, string description, DateTime dueDate,
+                                TodoStatus status, Guid userId, string updatedUser, bool rowStatus) 
+                                : base(id, updatedUser, rowStatus)
     {
         Title = title;
         Description = description;

@@ -8,10 +8,10 @@ using ToDoApp.BackEnd.Domain.Entities;
 
 namespace ToDoApp.BackEnd.Application.Features.CQRS.ToDoFeatures.Handlers;
 
-internal sealed class CreateTodoItemCommandHandler : BaseCreateCommandHandler<CreateTodoItemCommand, TodoItem, TodoItemListDto>
+public sealed class CreateTodoItemCommandHandler : BaseCreateCommandHandler<CreateTodoItemCommand, TodoItem, TodoItemListDto>
 {
-    public CreateTodoItemCommandHandler(IUnitOfWork uow, IValidator<CreateTodoItemCommand> validator, IMapper mapper) : base(uow, validator, mapper)
+    public CreateTodoItemCommandHandler(IUnitOfWork uow, IValidator<CreateTodoItemCommand> validator, IMapper mapper) 
+                                        : base(uow, validator, mapper)
     {
     }
-
 }
